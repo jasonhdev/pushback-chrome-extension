@@ -1,0 +1,57 @@
+body {
+    font-family: sans-serif;
+    min-width: 400px;
+    padding: 10px;
+    font-size: 14px;
+}
+
+h3 {
+    margin: 0 0 5px 0;
+}
+
+.messageRow {
+    padding: 5px 0;
+}
+
+#messageInput {
+    width: 80%;
+    font-size: 14px;
+    border: none;
+    outline: none;
+}
+
+#fileInput {
+    display: none;
+}
+
+#sendButton {
+    background: none;
+    border: none;
+    outline: none;
+}
+
+.hidden {
+    display: none;
+}
+
+#actionContainer {
+    float: right;
+    margin-right: 10px;
+    position: relative;
+    width: 18px;
+    height: 18px;
+}
+
+#actionContainer:hover {
+    fill: green;
+    transition: fill 0.2s ease;
+}
+
+#actionContainer .icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
