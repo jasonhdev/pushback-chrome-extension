@@ -31,8 +31,6 @@ input.addEventListener('keydown', async (event) => {
     const message = input.value;
     showFileInput();
     sendMessage(message);
-
-
   }
 });
 
@@ -46,7 +44,6 @@ const sendMessage = async (message) => {
       },
       body: JSON.stringify({
         type: 'note',
-        title: 'From PC',
         body: message,
       }),
     });
@@ -56,7 +53,9 @@ const sendMessage = async (message) => {
     if (response.ok) {
       console.log('Push sent successfully:', data);
       container.innerHTML += (`<div class="messageRow">
-        ${message}
+        <p class="messageContent receiver">
+          ${message}
+        </p>
       </div>`);
 
       input.value = "";
@@ -79,7 +78,9 @@ chrome.storage.local.get("recentPushes", (data) => {
 
   container.innerHTML = pushes.map(p =>
     `<div class="messageRow">
-        ${p.body}
+        <p class="messageContent ${p.source_device_iden ? 'sender' : 'receiver'}">
+          ${p.body}
+        </p>
       </div>`
   ).join("");
 

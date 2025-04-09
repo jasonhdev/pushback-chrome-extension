@@ -10,7 +10,26 @@ h3 {
 }
 
 .messageRow {
-    padding: 5px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.messageContent {
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 60%;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+.sender {
+    align-self: flex-end;
+    background-color: #d1f7c4;
+}
+
+.receiver {
+    align-self: flex-start;
+    background-color: #f0f0f0;
 }
 
 #messageInput {
