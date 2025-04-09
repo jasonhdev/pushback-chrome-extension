@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "PushBack",
+  "version": "1.0",
+  "description": "Bring Pushbullet extension back through the use of its API",
+  "permissions": [
+    "notifications",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.pushbullet.com/",
+    "wss://stream.pushbullet.com/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
