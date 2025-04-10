@@ -19,7 +19,7 @@ h3 {
     border-radius: 8px;
     max-width: 60%;
     word-wrap: break-word;
-    margin: 0;
+    margin: 0 0 10px 0;
 }
 
 .sender {
@@ -37,6 +37,7 @@ h3 {
     font-size: 14px;
     border: none;
     outline: none;
+    padding-bottom: 5px;
 }
 
 #fileInput {
