@@ -76,9 +76,13 @@ h3 {
     cursor: pointer;
 }
 
+#currentUrlContainer {
+    min-height: 28px;
+    margin: 5px 0 15px 0;
+}
+
 #currentUrl {
     background-color: #f0f0f0;
-    margin: 5px 0 15px 0;
     padding: 5px 5px 5px 10px;
     border-radius: 5px;
     color: #5151d1;
@@ -87,4 +91,13 @@ h3 {
     text-overflow: ellipsis;
     width: 100%;
     max-width: 400px;
+    border-left: 2px solid #5151d1;
+    box-shadow: 0 0 1px rgba(138, 138, 211, 0.2);
+    cursor: pointer;
+}
+
+#currentUrl:hover {
+    background-color: #e6e6ff;
+    box-shadow: 0 0 8px rgba(81, 81, 209, 0.2);
+    transform: scale(1.01);
 }
