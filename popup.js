@@ -2,30 +2,43 @@ const container = document.getElementById("pushes");
 const fileContainer = document.getElementById('fileContainer');
 const sendContainer = document.getElementById('sendContainer');
 const input = document.getElementById('messageInput');
-
+const currentUrl = document.getElementById("currentUrl")
 let pushes = [];
 
-chrome.runtime.onMessage.addListener((chromeMessage) => {
-  if (chromeMessage.action === 'pushReceived') {
-    container.innerHTML += (
-      `<div class="pushRow">
-          <p class="pushContent received">
-            ${chromeMessage.text}
-          </p>
-        </div>`
-    );
-  }
-});
-
-function showFileInput() {
+const showFileInput = () => {
   fileContainer.classList.remove('hidden');
   sendContainer.classList.add('hidden');
 }
 
-function showSendButton() {
+const showSendButton = () => {
   sendContainer.classList.remove('hidden');
   fileContainer.classList.add('hidden');
 }
+
+const isUrl = (text) => {
+  try {
+    new URL(text);
+    return true;
+  } catch (_) {
+    return false;
+  }
+};
+
+const getPushHtml = (push) => {
+  const content = push.body || push;
+
+  return `<div class="pushRow">
+            <p class="pushContent ${push.source_device_iden ? 'received' : 'sent'}">
+                ${isUrl(content) ? `<a href="${content}" target="_blank">${content}</a>` : content}
+            </p>
+          </div>`
+}
+
+chrome.runtime.onMessage.addListener((chromeMessage) => {
+  if (chromeMessage.action === 'pushReceived') {
+    container.innerHTML += getPushHtml(chromeMessage.body);
+  }
+});
 
 input.addEventListener('input', () => {
 
@@ -39,23 +52,16 @@ input.addEventListener('input', () => {
 input.addEventListener('keydown', async (event) => {
 
   if (event.key === 'Enter') {
-    const push = input.value;
+    let push = input.value;
     showFileInput();
 
-    if (!input.value) {
-      return;
+    if (!push) {
+      push = currentUrl.textContent;
     }
 
-    chrome.runtime.sendMessage({ action: "push", text: push })
+    chrome.runtime.sendMessage({ action: "push", body: push })
       .then(() => {
-        container.innerHTML += (
-          `<div class="pushRow">
-          <p class="pushContent sent">
-            ${push}
-          </p>
-        </div>`
-        );
-
+        container.innerHTML += getPushHtml(push);
         input.value = "";
       });
   }
@@ -69,15 +75,18 @@ chrome.storage.local.get("recentPushes", (data) => {
     return;
   }
 
-  container.innerHTML = pushes.map(p =>
-    `<div class="pushRow">
-        <p class="pushContent ${p.source_device_iden ? 'received' : 'sent'}">
-          ${p.body}
-        </p>
-      </div>`
+  container.innerHTML = pushes.map(push =>
+    getPushHtml(push)
   ).join("");
 
   // Clear badge and unread count
   // TODO: Dismiss message through API
   chrome.action.setBadgeText({ text: "" });
+});
+
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  const currentTab = tabs[0];
+  const url = currentTab.url;
+
+  currentUrl.textContent = url;
 });

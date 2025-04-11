@@ -4,23 +4,6 @@ let unreadCount = 0;
 //TODO: Prompt to enter user access token
 // chrome.storage.local.set({ access_token: ACCESS_TOKEN });
 const connectSocket = async () => {
-  const fetchAccessToken = async () => {
-    if (ACCESS_TOKEN.length > 0) {
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      chrome.storage.local.get('access_token', function (data) {
-        if (data.access_token) {
-          ACCESS_TOKEN = data.access_token;
-          resolve();
-        } else {
-          reject("No access token found.");
-        }
-      });
-    });
-  }
-
   await fetchAccessToken();
 
   const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
@@ -40,6 +23,23 @@ const connectSocket = async () => {
 
   socket.onclose = () => setTimeout(connectSocket, 5000);
   socket.onerror = (err) => console.error("WebSocket error:", err);
+}
+
+const fetchAccessToken = async () => {
+  if (ACCESS_TOKEN.length > 0) {
+    return;
+  }
+
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get('access_token', function (data) {
+      if (data.access_token) {
+        ACCESS_TOKEN = data.access_token;
+        resolve();
+      } else {
+        reject("No access token found.");
+      }
+    });
+  });
 }
 
 const fetchPushes = () => {
@@ -78,7 +78,7 @@ const processData = (data) => {
     priority: 1
   });
 
-  chrome.runtime.sendMessage({ action: "pushReceived", text: mostRecentPush.body })
+  chrome.runtime.sendMessage({ action: "pushReceived", body: mostRecentPush })
     .catch(err => {
       console.warn("Popup not open:", err.message);
     });
@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener(async (chromeMessage) => {
   if (chromeMessage.action === 'push') {
 
     try {
-      ACCESS_TOKEN = await fetchAccessToken();
+      await fetchAccessToken();
 
       const response = await fetch('https://api.pushbullet.com/v2/pushes', {
         method: 'POST',
@@ -103,7 +103,7 @@ chrome.runtime.onMessage.addListener(async (chromeMessage) => {
         },
         body: JSON.stringify({
           type: 'note',
-          body: chromeMessage.text,
+          body: chromeMessage.body,
         }),
       });
 

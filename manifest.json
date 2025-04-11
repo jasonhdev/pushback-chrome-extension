@@ -6,11 +6,11 @@
   "permissions": [
     "notifications",
     "storage",
-    "alarms"
+    "alarms",
+    "tabs"
   ],
   "host_permissions": [
-    "https://api.pushbullet.com/",
-    "wss://stream.pushbullet.com/"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"

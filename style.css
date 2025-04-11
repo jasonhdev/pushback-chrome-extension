@@ -75,3 +75,16 @@ h3 {
     height: 20px;
     cursor: pointer;
 }
+
+#currentUrl {
+    background-color: #f0f0f0;
+    margin: 5px 0 15px 0;
+    padding: 5px 5px 5px 10px;
+    border-radius: 5px;
+    color: #5151d1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 400px;
+}
