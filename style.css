@@ -9,12 +9,12 @@ h3 {
     margin: 0 0 5px 0;
 }
 
-.messageRow {
+.pushRow {
     display: flex;
     flex-direction: column;
 }
 
-.messageContent {
+.pushContent {
     padding: 8px 12px;
     border-radius: 8px;
     max-width: 60%;

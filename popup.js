@@ -6,10 +6,10 @@ const input = document.getElementById('messageInput');
 let pushes = [];
 
 chrome.runtime.onMessage.addListener((chromeMessage) => {
-  if (chromeMessage.action === 'messageReceived') {
+  if (chromeMessage.action === 'pushReceived') {
     container.innerHTML += (
-      `<div class="messageRow">
-          <p class="messageContent received">
+      `<div class="pushRow">
+          <p class="pushContent received">
             ${chromeMessage.text}
           </p>
         </div>`
@@ -39,15 +39,19 @@ input.addEventListener('input', () => {
 input.addEventListener('keydown', async (event) => {
 
   if (event.key === 'Enter') {
-    const message = input.value;
+    const push = input.value;
     showFileInput();
 
-    chrome.runtime.sendMessage({ action: "sendMessage", text: message })
+    if (!input.value) {
+      return;
+    }
+
+    chrome.runtime.sendMessage({ action: "push", text: push })
       .then(() => {
         container.innerHTML += (
-          `<div class="messageRow">
-          <p class="messageContent sent">
-            ${message}
+          `<div class="pushRow">
+          <p class="pushContent sent">
+            ${push}
           </p>
         </div>`
         );
@@ -66,8 +70,8 @@ chrome.storage.local.get("recentPushes", (data) => {
   }
 
   container.innerHTML = pushes.map(p =>
-    `<div class="messageRow">
-        <p class="messageContent ${p.source_device_iden ? 'received' : 'sent'}">
+    `<div class="pushRow">
+        <p class="pushContent ${p.source_device_iden ? 'received' : 'sent'}">
           ${p.body}
         </p>
       </div>`

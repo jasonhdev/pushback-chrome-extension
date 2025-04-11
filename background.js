@@ -5,10 +5,15 @@ let unreadCount = 0;
 // chrome.storage.local.set({ access_token: ACCESS_TOKEN });
 const connectSocket = async () => {
   const fetchAccessToken = async () => {
+    if (ACCESS_TOKEN.length > 0) {
+      return;
+    }
+
     return new Promise((resolve, reject) => {
       chrome.storage.local.get('access_token', function (data) {
         if (data.access_token) {
-          resolve(data.access_token);
+          ACCESS_TOKEN = data.access_token;
+          resolve();
         } else {
           reject("No access token found.");
         }
@@ -16,11 +21,7 @@ const connectSocket = async () => {
     });
   }
 
-  try {
-    ACCESS_TOKEN = await fetchAccessToken();
-  } catch (error) {
-    console.log(error);
-  }
+  await fetchAccessToken();
 
   const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
   const socket = new WebSocket(socketUrl);
@@ -69,7 +70,7 @@ const processData = (data) => {
     return;
   }
 
-  chrome.runtime.sendMessage({ action: "messageReceived", text: mostRecentPush.body })
+  chrome.runtime.sendMessage({ action: "pushReceived", text: mostRecentPush.body })
     .catch(err => {
       console.warn("Popup not open:", err.message);
     });
@@ -81,8 +82,11 @@ const processData = (data) => {
 }
 
 chrome.runtime.onMessage.addListener(async (chromeMessage) => {
-  if (chromeMessage.action === 'sendMessage') {
+  if (chromeMessage.action === 'push') {
+
     try {
+      ACCESS_TOKEN = await fetchAccessToken();
+
       const response = await fetch('https://api.pushbullet.com/v2/pushes', {
         method: 'POST',
         headers: {
@@ -100,7 +104,7 @@ chrome.runtime.onMessage.addListener(async (chromeMessage) => {
       if (response.ok) {
         console.log('Push sent successfully:', data);
       } else {
-        console.error('Error sending push:', data);
+        console.error('Error sending push:', data.error?.message || JSON.stringify(data));
       }
     } catch (error) {
       console.error('Error sending push:', error);
