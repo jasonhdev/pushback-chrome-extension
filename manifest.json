@@ -5,7 +5,8 @@
   "description": "Bring Pushbullet extension back through the use of its API",
   "permissions": [
     "notifications",
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "https://api.pushbullet.com/",
