@@ -70,6 +70,14 @@ const processData = (data) => {
     return;
   }
 
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icon.png',
+    title: 'Pushback',
+    message: mostRecentPush.body,
+    priority: 1
+  });
+
   chrome.runtime.sendMessage({ action: "pushReceived", text: mostRecentPush.body })
     .catch(err => {
       console.warn("Popup not open:", err.message);
