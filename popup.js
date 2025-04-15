@@ -57,7 +57,7 @@ window.addEventListener('keydown', (event) => {
       return;
     }
 
-    chrome.runtime.sendMessage({ action: "push", body: push })
+    chrome.runtime.sendMessage({ action: "sendPush", body: push })
       .then(() => {
         container.innerHTML += getPushHtml(push);
         input.value = "";

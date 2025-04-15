@@ -1,10 +1,11 @@
 let ACCESS_TOKEN = "";
-let unreadCount = 0;
+let storagePushes = [];
 
 //TODO: Prompt to enter user access token
 // chrome.storage.local.set({ access_token: ACCESS_TOKEN });
 const connectSocket = async () => {
   await fetchAccessToken();
+  await fetchStoragePushes();
 
   const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
   const socket = new WebSocket(socketUrl);
@@ -42,30 +43,46 @@ const fetchAccessToken = async () => {
   });
 }
 
+const fetchStoragePushes = async () => {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get('recentPushes', function (data) {
+      if (data.recentPushes) {
+        storagePushes = data.recentPushes;
+        resolve();
+      } else {
+        reject("No recent pushes found.");
+      }
+    });
+  });
+}
+
 const fetchPushes = () => {
-  fetch("https://api.pushbullet.com/v2/pushes?active=true&limit=3", {
+  const modifiedAfter = storagePushes[storagePushes.length - 1].created;
+
+  fetch(`https://api.pushbullet.com/v2/pushes?active=true&limit=3&modified_after=${modifiedAfter}`, {
     headers: { "Access-Token": ACCESS_TOKEN }
   })
     .then(res => res.json())
     .then(data => {
-      if (!data.pushes) {
+
+      const storagePushIdens = new Set(storagePushes.map(p => p.iden));
+      const unseenPushes = data.pushes
+        .filter(p => !storagePushIdens.has(p.iden))
+        .filter(p => p.type === "note").reverse(); // && !p.dismissed
+
+      if (!unseenPushes.length) {
         return;
       }
 
-      processData(data);
+      processData(unseenPushes);
     });
 }
 
-const processData = (data) => {
-  // && !p.dismissed
-  const pushes = data.pushes.filter(p => p.type === "note").reverse();
-  unreadCount = pushes.length;
+const processData = (unseenPushes) => {
+  const updatedStoragePushes = [...storagePushes, ...unseenPushes].slice(-5);
+  chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });
 
-  chrome.storage.local.set({ recentPushes: pushes });
-
-  console.log(pushes);
-
-  const mostRecentPush = pushes[pushes.length - 1];
+  const mostRecentPush = unseenPushes[unseenPushes.length - 1];
   if (!mostRecentPush.source_device_iden) {
     return;
   }
@@ -83,6 +100,8 @@ const processData = (data) => {
       console.warn("Popup not open:", err.message);
     });
 
+  const unreadCount = unseenPushes.length;
+
   if (unreadCount > 0) {
     chrome.action.setBadgeText({ text: unreadCount.toString() });
     chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
@@ -90,7 +109,7 @@ const processData = (data) => {
 }
 
 chrome.runtime.onMessage.addListener(async (chromeMessage) => {
-  if (chromeMessage.action === 'push') {
+  if (chromeMessage.action === "sendPush") {
 
     try {
       await fetchAccessToken();
