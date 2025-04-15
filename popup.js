@@ -13,7 +13,6 @@ const showFileInput = () => {
 const showSendButton = () => {
   sendContainer.classList.remove('hidden');
   fileContainer.classList.add('hidden');
-  currentUrl.replaceWith(document.createElement("p"));
 }
 
 const isUrl = (text) => {
@@ -54,12 +53,20 @@ window.addEventListener('keydown', (event) => {
       push = currentUrl.textContent;
     }
 
+    if (!push.length) {
+      return;
+    }
+
     chrome.runtime.sendMessage({ action: "push", body: push })
       .then(() => {
         container.innerHTML += getPushHtml(push);
         input.value = "";
       });
   }
+
+  currentUrl.replaceWith(document.createElement("p"));
+  currentUrl.textContent = "";
+
 });
 
 input.addEventListener('input', () => {
