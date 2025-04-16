@@ -101,3 +101,12 @@ h3 {
     box-shadow: 0 0 8px rgba(81, 81, 209, 0.2);
     transform: scale(1.01);
 }
+
+#loginForm {
+    display: none;
+}
+
+#loginErrorMsg {
+    color: red;
+    display: none;
+}

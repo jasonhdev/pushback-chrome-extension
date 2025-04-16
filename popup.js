@@ -34,70 +34,111 @@ const getPushHtml = (push) => {
           </div>`
 }
 
-chrome.runtime.onMessage.addListener((chromeMessage) => {
-  if (chromeMessage.action === 'pushReceived') {
-    container.innerHTML += getPushHtml(chromeMessage.body);
-  }
-});
+document.addEventListener('DOMContentLoaded', () => {
 
-window.addEventListener('keydown', (event) => {
-  if (document.activeElement !== input) {
-    input.focus();
-  }
+  // Check for login
+  chrome.storage.local.get(['accessToken'], (data) => {
+    if (!data.accessToken) {
+      const loginForm = document.getElementById('loginForm');
+      const app = document.getElementById('app');
+      const loginBtn = document.getElementById('loginBtn');
+      const tokenInput = document.getElementById('tokenInput');
 
-  if (event.key === 'Enter') {
-    let push = input.value;
-    showFileInput();
+      loginForm.style.display = "block";
+      app.style.display = "none";
 
-    if (!push) {
-      push = currentUrl.textContent;
+      loginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        const token = tokenInput.value.trim();
+        if (!token) {
+          return;
+        }
+
+        chrome.runtime.sendMessage({ action: 'setAccessToken', token: token },
+          (response) => {
+            if (response?.success) {
+              loginForm.style.display = "none";
+              app.style.display = "block";
+
+            } else {
+              const errorMsg = document.getElementById('loginErrorMsg');
+              errorMsg.style.display = "block";
+            }
+          }
+        );
+      });
+    }
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (document.activeElement !== input) {
+      input.focus();
     }
 
-    if (!push.length) {
+    if (event.key === 'Enter') {
+      let push = input.value;
+      showFileInput();
+
+      if (!push) {
+        push = currentUrl.textContent;
+      }
+
+      if (!push.length) {
+        return;
+      }
+
+      chrome.runtime.sendMessage({ action: "sendPush", body: push })
+        .then(() => {
+          container.innerHTML += getPushHtml(push);
+          input.value = "";
+        });
+    }
+
+    currentUrl.replaceWith(document.createElement("p"));
+    currentUrl.textContent = "";
+
+  });
+
+  input.addEventListener('input', () => {
+
+    if (input.value.length > 0) {
+      showSendButton();
+    } else {
+      showFileInput();
+    }
+  });
+
+  // Listen for new messages
+  chrome.runtime.onMessage.addListener((chromeMessage) => {
+    if (chromeMessage.action === 'pushReceived') {
+      container.innerHTML += getPushHtml(chromeMessage.body);
+    }
+  });
+
+  // Fetch pushes from local storage upon each popup open
+  chrome.storage.local.get("recentPushes", (data) => {
+    pushes = data.recentPushes || [];
+
+    if (pushes.length === 0) {
+      container.innerText = "No unread messages.";
       return;
     }
 
-    chrome.runtime.sendMessage({ action: "sendPush", body: push })
-      .then(() => {
-        container.innerHTML += getPushHtml(push);
-        input.value = "";
-      });
-  }
+    container.innerHTML = pushes.map(push =>
+      getPushHtml(push)
+    ).join("");
 
-  currentUrl.replaceWith(document.createElement("p"));
-  currentUrl.textContent = "";
+    // Clear badge and unread count
+    // TODO: Dismiss message through API
+    chrome.action.setBadgeText({ text: "" });
+  });
 
-});
+  // Attach current browser URL to message input
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const currentTab = tabs[0];
+    const url = currentTab.url;
 
-input.addEventListener('input', () => {
-
-  if (input.value.length > 0) {
-    showSendButton();
-  } else {
-    showFileInput();
-  }
-});
-
-chrome.storage.local.get("recentPushes", (data) => {
-  pushes = data.recentPushes || [];
-
-  if (pushes.length === 0) {
-    container.innerText = "No unread messages.";
-    return;
-  }
-
-  container.innerHTML = pushes.map(push =>
-    getPushHtml(push)
-  ).join("");
-
-  // Clear badge and unread count
-  // TODO: Dismiss message through API
-  chrome.action.setBadgeText({ text: "" });
-});
-
-chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  const currentTab = tabs[0];
-  const url = currentTab.url;
-
-  currentUrl.textContent = url;
+    currentUrl.textContent = url;
+  });
 });
