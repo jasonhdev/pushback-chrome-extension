@@ -2,7 +2,6 @@ let ACCESS_TOKEN = null;
 let storagePushes = [];
 let socket;
 
-//TODO: Prompt to enter user access token
 const connectSocket = async () => {
   try {
     await fetchAccessToken();
@@ -64,9 +63,9 @@ const fetchStoragePushes = async () => {
 }
 
 const fetchPushes = () => {
-  const modifiedAfter = storagePushes.length ? storagePushes[storagePushes.length - 1].created : 0;
+  const modifiedAfter = storagePushes.at(-1)?.created ?? 0;
 
-  fetch(`https://api.pushbullet.com/v2/pushes?active=true&limit=3&modified_after=${modifiedAfter}`, {
+  fetch(`https://api.pushbullet.com/v2/pushes?active=true&limit=5&modified_after=${modifiedAfter}`, {
     headers: { "Access-Token": ACCESS_TOKEN }
   })
     .then(res => res.json())
@@ -81,38 +80,36 @@ const fetchPushes = () => {
         return;
       }
 
-      processData(unseenPushes);
+      const updatedStoragePushes = [...storagePushes, ...unseenPushes].slice(-5);
+      storagePushes = updatedStoragePushes;
+
+      chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });
+
+      const mostRecentPush = unseenPushes.at(-1);
+      if (!mostRecentPush.source_device_iden) {
+        return;
+      }
+
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icon.png',
+        title: 'Pushback',
+        message: mostRecentPush.body,
+        priority: 1
+      });
+
+      chrome.runtime.sendMessage({ action: "pushReceived", body: mostRecentPush })
+        .catch(err => {
+          console.warn("Popup not open:", err.message);
+        });
+
+      const unreadCount = unseenPushes.length;
+
+      if (unreadCount > 0) {
+        chrome.action.setBadgeText({ text: unreadCount.toString() });
+        chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
+      }
     });
-}
-
-const processData = (unseenPushes) => {
-  const updatedStoragePushes = [...storagePushes, ...unseenPushes].slice(-5);
-  chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });
-
-  const mostRecentPush = unseenPushes[unseenPushes.length - 1];
-  if (!mostRecentPush.source_device_iden) {
-    return;
-  }
-
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: 'icon.png',
-    title: 'Pushback',
-    message: mostRecentPush.body,
-    priority: 1
-  });
-
-  chrome.runtime.sendMessage({ action: "pushReceived", body: mostRecentPush })
-    .catch(err => {
-      console.warn("Popup not open:", err.message);
-    });
-
-  const unreadCount = unseenPushes.length;
-
-  if (unreadCount > 0) {
-    chrome.action.setBadgeText({ text: unreadCount.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
-  }
 }
 
 const handleSendPush = async (message, sendResponse) => {
