@@ -1,5 +1,6 @@
 let ACCESS_TOKEN = null;
 let storagePushes = [];
+let socket;
 
 //TODO: Prompt to enter user access token
 const connectSocket = async () => {
@@ -13,7 +14,7 @@ const connectSocket = async () => {
   await fetchStoragePushes();
 
   const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
-  const socket = new WebSocket(socketUrl);
+  socket = new WebSocket(socketUrl);
 
   socket.onopen = () => {
     console.log("Connected to Pushbullet stream");
@@ -180,3 +181,19 @@ chrome.runtime.onMessage.addListener((chromeMessage, sender, sendResponse) => {
 });
 
 connectSocket();
+
+// Hack to keep service worker alive in manifest v3
+setInterval(() => {
+  chrome.storage.local.set({ lastAlive: new Date().toISOString() });
+}, 20000);
+
+chrome.alarms.create('checkReconnect', { periodInMinutes: 5 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'checkReconnect') {
+    if (!socket || socket.readyState === WebSocket.CLOSED) {
+      console.log("connecting through alarm!");
+      connectSocket();
+    }
+  }
+});
