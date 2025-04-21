@@ -129,9 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
       getPushHtml(push)
     ).join("");
 
-    // Clear badge and unread count
-    // TODO: Dismiss message through API
+    // Clear badge and marked as read
     chrome.action.setBadgeText({ text: "" });
+
+    pushes.filter(push => !push.dismissed).forEach(push => {
+      chrome.runtime.sendMessage({ action: "markRead", dismissed: true, iden: push.iden });
+    });
   });
 
   // Attach current browser URL to message input

@@ -72,20 +72,20 @@ const fetchPushes = () => {
     .then(data => {
 
       const storagePushIdens = new Set(storagePushes.map(p => p.iden));
-      const unseenPushes = data.pushes
+      const newPushes = data.pushes
         .filter(p => !storagePushIdens.has(p.iden))
         .filter(p => p.type === "note").reverse();
 
-      if (!unseenPushes.length) {
+      if (!newPushes.length) {
         return;
       }
 
-      const updatedStoragePushes = [...storagePushes, ...unseenPushes].slice(-5);
+      const updatedStoragePushes = [...storagePushes, ...newPushes].slice(-5);
       storagePushes = updatedStoragePushes;
 
       chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });
 
-      const mostRecentPush = unseenPushes.at(-1);
+      const mostRecentPush = newPushes.at(-1);
       if (!mostRecentPush.source_device_iden) {
         return;
       }
@@ -103,7 +103,7 @@ const fetchPushes = () => {
           console.warn("Popup not open:", err.message);
         });
 
-      const unreadCount = unseenPushes.length;
+      const unreadCount = storagePushes.filter(p => !p.dismissed && p.source_device_iden).length;
 
       if (unreadCount > 0) {
         chrome.action.setBadgeText({ text: unreadCount.toString() });
@@ -165,6 +165,40 @@ const handleValidateToken = async (token, sendResponse) => {
   }
 }
 
+const handleMarkRead = async (chromeMessage, sendResponse) => {
+  const iden = chromeMessage.iden;
+
+  fetch(`https://api.pushbullet.com/v2/pushes/${iden}`, {
+    method: 'POST',
+    headers: {
+      'Access-Token': ACCESS_TOKEN,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ dismissed: chromeMessage.dismissed })
+  })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to dismiss push ${iden}`);
+      }
+      return response.json();
+    })
+    .then(() => {
+      const push = storagePushes.find(p => p.iden === iden);
+      if (push) {
+        push.dismissed = true;
+      }
+
+      chrome.storage.local.set({ 'recentPushes': storagePushes });
+
+      console.log(`Push ${iden} dismissed`);
+    })
+    .catch(err => {
+      console.error(err);
+    });
+
+  sendResponse({ success: true });
+}
+
 chrome.runtime.onMessage.addListener((chromeMessage, sender, sendResponse) => {
   if (chromeMessage.action === "sendPush") {
     handleSendPush(chromeMessage.body, sendResponse);
@@ -172,6 +206,10 @@ chrome.runtime.onMessage.addListener((chromeMessage, sender, sendResponse) => {
 
   if (chromeMessage.action === 'setAccessToken') {
     handleValidateToken(chromeMessage.token, sendResponse);
+  }
+
+  if (chromeMessage.action === 'markRead') {
+    handleMarkRead(chromeMessage, sendResponse);
   }
 
   return true;
