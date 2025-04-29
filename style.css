@@ -96,7 +96,8 @@ h3 {
     cursor: pointer;
 }
 
-#currentUrl:hover {
+#currentUrl:hover,
+#currentUrl.active {
     background-color: #e6e6ff;
     box-shadow: 0 0 8px rgba(81, 81, 209, 0.2);
     transform: scale(1.01);

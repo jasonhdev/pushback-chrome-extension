@@ -29,13 +29,38 @@ const getPushHtml = (push) => {
 
   return `<div class="pushRow">
             <p class="pushContent ${push.source_device_iden ? 'received' : 'sent'}">
-                ${isUrl(content) ? `<a href="${content}" target="_blank">${content}</a>` : content}
+                ${isUrl(content) ? `<a href="${content}" target="_blank">${content}</a>` : content.replace(/\n/g, "<br>")}
             </p>
           </div>`
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+const hideCurrentUrl = () => {
+  currentUrl.replaceWith(document.createElement("p"));
+  currentUrl.textContent = "";
+}
 
+const sendMessage = () => {
+  let push = input.value;
+  showFileInput();
+
+  if (!push) {
+    push = currentUrl.textContent;
+  }
+
+  if (!push.length) {
+    return;
+  }
+
+  chrome.runtime.sendMessage({ action: "sendPush", body: push })
+    .then(() => {
+      container.innerHTML += getPushHtml(push);
+      input.value = "";
+    });
+
+  hideCurrentUrl();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
   // Check for login
   chrome.storage.local.get(['accessToken'], (data) => {
     if (!data.accessToken) {
@@ -71,33 +96,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = input.scrollHeight + "px";
+  });
+
+  sendContainer.addEventListener("click", () => {
+    sendMessage();
+    hideCurrentUrl();
+  })
+
   window.addEventListener('keydown', (event) => {
     if (document.activeElement !== input) {
       input.focus();
     }
 
-    if (event.key === 'Enter') {
-      let push = input.value;
-      showFileInput();
-
-      if (!push) {
-        push = currentUrl.textContent;
-      }
-
-      if (!push.length) {
-        return;
-      }
-
-      chrome.runtime.sendMessage({ action: "sendPush", body: push })
-        .then(() => {
-          container.innerHTML += getPushHtml(push);
-          input.value = "";
-        });
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
     }
 
-    currentUrl.replaceWith(document.createElement("p"));
-    currentUrl.textContent = "";
+    hideCurrentUrl();
 
+  });
+
+  currentUrl.addEventListener('click', function () {
+    showSendButton();
+    this.classList.add('active');
   });
 
   input.addEventListener('input', () => {
