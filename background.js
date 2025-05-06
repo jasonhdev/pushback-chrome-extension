@@ -122,16 +122,30 @@ const handleSendPush = async (message, sendResponse) => {
   try {
     await fetchAccessToken();
 
+    console.log(message);
+
+    if (message.file_name) {
+      body = JSON.stringify({
+        type: 'file',
+        file_name: message.file_name,
+        file_type: message.file_type,
+        file_url: message.file_url,
+        body: "",
+      })
+    } else {
+      body = JSON.stringify({
+        type: 'note',
+        body: message,
+      })
+    }
+
     const response = await fetch('https://api.pushbullet.com/v2/pushes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
       },
-      body: JSON.stringify({
-        type: 'note',
-        body: message,
-      }),
+      body: body
     });
 
     const data = await response.json();
@@ -205,6 +219,26 @@ const handleMarkRead = async (chromeMessage, sendResponse) => {
   sendResponse({ success: true });
 }
 
+const handleGetUploadUrl = async (chromeMessage, sendResponse) => {
+
+  // Request URL for upload
+  const uploadRequest = await fetch('https://api.pushbullet.com/v2/upload-request', {
+    method: 'POST',
+    headers: {
+      'Access-Token': ACCESS_TOKEN,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      file_name: chromeMessage.file_name,
+      file_type: chromeMessage.file_type
+    })
+  });
+
+  const uploadData = await uploadRequest.json();
+
+  sendResponse({ success: true, uploadData: uploadData });
+}
+
 chrome.runtime.onMessage.addListener((chromeMessage, sender, sendResponse) => {
   if (chromeMessage.action === "sendPush") {
     handleSendPush(chromeMessage.body, sendResponse);
@@ -216,6 +250,10 @@ chrome.runtime.onMessage.addListener((chromeMessage, sender, sendResponse) => {
 
   if (chromeMessage.action === 'markRead') {
     handleMarkRead(chromeMessage, sendResponse);
+  }
+
+  if (chromeMessage.action === 'getUploadUrl') {
+    handleGetUploadUrl(chromeMessage, sendResponse);
   }
 
   return true;

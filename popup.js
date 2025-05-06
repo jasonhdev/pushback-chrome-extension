@@ -1,8 +1,11 @@
+const app = document.getElementById('app');
 const container = document.getElementById("pushes");
 const fileContainer = document.getElementById('fileContainer');
 const sendContainer = document.getElementById('sendContainer');
 const input = document.getElementById('messageInput');
+const fileInput = document.getElementById('fileInput');
 const currentUrl = document.getElementById("currentUrl")
+
 let pushes = [];
 
 const showFileInput = () => {
@@ -29,8 +32,8 @@ const getPushHtml = (push) => {
   const pushTypeClass = isReceived ? 'received' : 'sent';
 
   const renderFilePush = (push) => {
-    const preview = push.image_url
-      ? `<img class="messageImg" src="${push.image_url}" />`
+    const preview = push.file_type.startsWith("image/")
+      ? `<img class="messageImg" src="${push.file_url}" />`
       : push.file_name;
     return `<a href="${push.file_url}" target="_blank">${preview}</a>`;
   };
@@ -60,16 +63,14 @@ const hideCurrentUrl = () => {
   currentUrl.textContent = "";
 }
 
-const sendMessage = () => {
-  let push = input.value;
+const sendMessage = (filePush = null) => {
+
+  let push = filePush ?? input.value;
+
   showFileInput();
 
   if (!push) {
     push = currentUrl.textContent;
-  }
-
-  if (!push.length) {
-    return;
   }
 
   chrome.runtime.sendMessage({ action: "sendPush", body: push })
@@ -84,12 +85,11 @@ const sendMessage = () => {
 document.addEventListener('DOMContentLoaded', () => {
   // Check for login
   chrome.storage.local.get(['accessToken'], (data) => {
-    if (!data.accessToken) {
-      const loginForm = document.getElementById('loginForm');
-      const app = document.getElementById('app');
-      const loginBtn = document.getElementById('loginBtn');
-      const tokenInput = document.getElementById('tokenInput');
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const tokenInput = document.getElementById('tokenInput');
 
+    if (!data.accessToken) {
       loginForm.style.display = "block";
       app.style.display = "none";
 
@@ -120,6 +120,41 @@ document.addEventListener('DOMContentLoaded', () => {
   input.addEventListener("input", () => {
     input.style.height = "auto";
     input.style.height = input.scrollHeight + "px";
+  });
+
+  fileInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    chrome.runtime.sendMessage({ action: "getUploadUrl", file_name: file.name, file_type: file.type }, async (response) => {
+      // Upload the file
+      const uploadData = response.uploadData;
+
+
+      try {
+        const formData = new FormData();
+        Object.entries(uploadData.data).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        formData.append('file', file);
+
+        await fetch(uploadData.upload_url, {
+          method: 'POST',
+          body: formData
+        });
+
+        const push = {
+          file_name: file.name,
+          file_type: file.type,
+          file_url: uploadData.file_url,
+        }
+
+        sendMessage(push);
+
+      } catch (error) {
+        console.error('Upload failed:', error);
+      }
+    });
   });
 
   sendContainer.addEventListener("click", () => {
