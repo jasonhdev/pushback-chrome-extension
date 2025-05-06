@@ -12,8 +12,13 @@ const connectSocket = async () => {
 
   await fetchStoragePushes();
 
-  const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
-  socket = new WebSocket(socketUrl);
+  try {
+    const socketUrl = `wss://stream.pushbullet.com/websocket/${ACCESS_TOKEN}`;
+    socket = new WebSocket(socketUrl);
+  }
+  catch (err) {
+    console.warn(err);
+  }
 
   socket.onopen = () => {
     console.log("Connected to Pushbullet stream");
