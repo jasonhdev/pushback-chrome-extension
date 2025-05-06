@@ -85,7 +85,7 @@ const fetchPushes = () => {
         return;
       }
 
-      const updatedStoragePushes = [...storagePushes, ...newPushes].slice(-5);
+      const updatedStoragePushes = [...storagePushes, ...newPushes].slice(-15);
       storagePushes = updatedStoragePushes;
 
       chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });

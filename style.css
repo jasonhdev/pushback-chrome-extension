@@ -11,13 +11,17 @@ h3 {
 }
 
 #pushes {
-    height: 400px;
+    max-height: 400px;
     width: 100%;
     margin-top: 10px;
     padding-right: 10px;
     box-sizing: border-box;
     scrollbar-width: thin;
-    overflow: auto;
+    overflow-y: auto;
+}
+
+#pushes.loaded {
+    scroll-behavior: smooth;
 }
 
 .pushRow {

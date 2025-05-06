@@ -1,5 +1,5 @@
 const app = document.getElementById('app');
-const container = document.getElementById("pushes");
+const pushesContainer = document.getElementById("pushes");
 const fileContainer = document.getElementById('fileContainer');
 const sendContainer = document.getElementById('sendContainer');
 const input = document.getElementById('messageInput');
@@ -74,12 +74,18 @@ const sendMessage = (filePush = null) => {
 
   chrome.runtime.sendMessage({ action: "sendPush", body: push })
     .then(() => {
-      container.innerHTML += getPushHtml(push);
+      pushesContainer.innerHTML += getPushHtml(push);
       input.value = "";
+
+      scrollIntoView();
     });
 
   hideCurrentUrl();
 }
+
+const scrollIntoView = () => {
+  pushesContainer.scrollTop = pushesContainer.scrollHeight;
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   // Check for login
@@ -196,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for new messages
   chrome.runtime.onMessage.addListener((chromeMessage) => {
     if (chromeMessage.action === 'pushReceived') {
-      container.innerHTML += getPushHtml(chromeMessage.body);
+      pushesContainer.innerHTML += getPushHtml(chromeMessage.body);
     }
   });
 
@@ -205,13 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
     pushes = data.recentPushes || [];
 
     if (pushes.length === 0) {
-      container.innerText = "No unread messages.";
+      pushesContainer.innerText = "No unread messages.";
       return;
     }
 
-    container.innerHTML = pushes.map(push =>
+    pushesContainer.innerHTML = pushes.map(push =>
       getPushHtml(push)
     ).join("");
+
+    scrollIntoView()
+    pushesContainer.className = "loaded";
 
     // Clear badge and marked as read
     chrome.action.setBadgeText({ text: "" });
