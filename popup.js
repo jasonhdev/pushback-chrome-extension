@@ -59,8 +59,7 @@ const getPushHtml = (push) => {
 };
 
 const hideCurrentUrl = () => {
-  currentUrl.replaceWith(document.createElement("p"));
-  currentUrl.textContent = "";
+  currentUrl.remove();
 }
 
 const sendMessage = (filePush = null) => {
