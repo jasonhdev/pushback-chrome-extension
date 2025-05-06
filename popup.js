@@ -163,6 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey || event.altKey) {
+      return;
+    }
+
     if (document.activeElement !== input) {
       input.focus();
     }
