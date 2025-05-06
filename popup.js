@@ -25,14 +25,35 @@ const isUrl = (text) => {
 };
 
 const getPushHtml = (push) => {
-  const content = push.body || push;
+  const isReceived = !!push.source_device_iden;
+  const pushTypeClass = isReceived ? 'received' : 'sent';
 
-  return `<div class="pushRow">
-            <p class="pushContent ${push.source_device_iden ? 'received' : 'sent'}">
-                ${isUrl(content) ? `<a href="${content}" target="_blank">${content}</a>` : content.replace(/\n/g, "<br>")}
-            </p>
-          </div>`
-}
+  const renderFilePush = (push) => {
+    const preview = push.image_url
+      ? `<img class="messageImg" src="${push.image_url}" />`
+      : push.file_name;
+    return `<a href="${push.file_url}" target="_blank">${preview}</a>`;
+  };
+
+  const renderTextPush = (content) => {
+    if (isUrl(content)) {
+      return `<a href="${content}" target="_blank">${content}</a>`;
+    }
+    return content.replace(/\n/g, "<br>");
+  };
+
+  const content = push.file_name
+    ? renderFilePush(push)
+    : renderTextPush(push.body || push);
+
+  return `
+    <div class="pushRow">
+      <p class="pushContent ${pushTypeClass}">
+        ${content}
+      </p>
+    </div>
+  `;
+};
 
 const hideCurrentUrl = () => {
   currentUrl.replaceWith(document.createElement("p"));

@@ -79,7 +79,7 @@ const fetchPushes = () => {
       const storagePushIdens = new Set(storagePushes.map(p => p.iden));
       const newPushes = data.pushes
         .filter(p => !storagePushIdens.has(p.iden))
-        .filter(p => p.type === "note").reverse();
+        .reverse();
 
       if (!newPushes.length) {
         return;
@@ -99,7 +99,7 @@ const fetchPushes = () => {
           type: 'basic',
           iconUrl: 'icon.png',
           title: 'Pushback',
-          message: newPush.body,
+          message: newPush.body || newPush.file_name || "You received a push!",
           priority: 1
         });
 

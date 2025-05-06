@@ -111,3 +111,7 @@ h3 {
     color: red;
     display: none;
 }
+
+.messageImg {
+    max-width: 200px;
+}
