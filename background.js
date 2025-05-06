@@ -90,23 +90,24 @@ const fetchPushes = () => {
 
       chrome.storage.local.set({ 'recentPushes': updatedStoragePushes });
 
-      const mostRecentPush = newPushes.at(-1);
-      if (!mostRecentPush.source_device_iden) {
-        return;
-      }
+      for (const newPush of newPushes) {
+        if (!newPush.source_device_iden) {
+          continue;
+        }
 
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: 'Pushback',
-        message: mostRecentPush.body,
-        priority: 1
-      });
-
-      chrome.runtime.sendMessage({ action: "pushReceived", body: mostRecentPush })
-        .catch(err => {
-          console.warn("Popup not open:", err.message);
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icon.png',
+          title: 'Pushback',
+          message: newPush.body,
+          priority: 1
         });
+
+        chrome.runtime.sendMessage({ action: "pushReceived", body: newPush })
+          .catch(err => {
+            console.warn("Popup not open:", err.message);
+          });
+      }
 
       const unreadCount = storagePushes.filter(p => !p.dismissed && p.source_device_iden).length;
 
