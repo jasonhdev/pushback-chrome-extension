@@ -47,7 +47,7 @@ const getPushHtml = (push) => {
 
   const content = push.file_name
     ? renderFilePush(push)
-    : renderTextPush(push.body || push);
+    : renderTextPush(push.body || push.url || push);
 
   return `
     <div class="pushRow">
